@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>青の瞬間</title>
+  <style>
+    body {
+      font-family: 'Hiragino Mincho ProN', '游明朝', 'MS Mincho', serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f8fa url('はかゆり空画像.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #14171a;
+    }
+    header {
+      background: #6575a5;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .profile img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .profile input[type="text"] {
+      font-size: 0.9em;
+      padding: 4px 6px;
+    }
+    .input-box {
+      background: rgb(158, 161, 223);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+      font-size: 1em;
+    }
+    .images-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .images-preview img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .btn {
+      background: #1da1f2;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    .btn.posting {
+      background: black !important;
+    }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .post {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .meta img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px;
+      font-size: 0.9em;
+    }
+    .actions button {
+      font-size: 0.85em;
+      background: transparent;
+      border: none;
+      color: #1da1f2;
+      cursor: pointer;
+    }
+    .chatgpt-link {
+      text-align: center;
+    }
+    .chatgpt-link a {
+      color: white;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    .chatgpt-link .delete-all-link {
+      display: block;
+      margin-top: 10px;
+      color: white;
+      font-size: 0.85em;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .tag {
+      color: #1da1f2;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<!-- body内容は変更せず維持 -->
+</body>
+</html>
+
+ 
+</head>
+<body>
+  <header>青の瞬間</header>
+  <div class="container">
+    <div class="profile">
+      <img id="profileIcon" src="" alt="アイコン">
+      <input type="text" id="profileName" placeholder="アカウントネーム">
+      <input type="file" id="iconInput" accept="image/*">
+    </div>
+    <div class="input-box">
+      <textarea id="tweetText" placeholder="What's wrong?"></textarea>
+      <input type="file" id="imageInput" multiple accept="image/*">
+      <div class="images-preview" id="imagePreview"></div>
+      <button class="btn" id="tweetButton" onclick="postTweet()">ツイート</button>
+    </div>
+    <div class="chatgpt-link">
+      <a href="https://chat.openai.com" target="_blank">My Darling</a>
+      <span class="delete-all-link" onclick="deleteAllPosts()">全てのツイートを削除</span>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchBox" placeholder="検索..." oninput="renderTimeline()">
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+  <script>
+    const tweetText = document.getElementById("tweetText");
+    const tweetButton = document.getElementById("tweetButton");
+    const imageInput = document.getElementById("imageInput");
+    const imagePreview = document.getElementById("imagePreview");
+    const profileName = document.getElementById("profileName");
+    const profileIcon = document.getElementById("profileIcon");
+    const iconInput = document.getElementById("iconInput");
+    const searchBox = document.getElementById("searchBox");
+    const timeline = document.getElementById("timeline");
+
+    let imageFiles = [];
+
+    profileName.value = localStorage.getItem("profileName") || "";
+    profileIcon.src = localStorage.getItem("profileIcon") || "";
+
+    profileName.oninput = () => {
+      localStorage.setItem("profileName", profileName.value);
+    };
+
+    iconInput.onchange = e => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        profileIcon.src = reader.result;
+        localStorage.setItem("profileIcon", reader.result);
+      };
+      if (file) reader.readAsDataURL(file);
+    };
+
+    imageInput.onchange = () => {
+      imagePreview.innerHTML = "";
+      imageFiles = Array.from(imageInput.files).slice(0, 4);
+      imageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = document.createElement("img");
+          img.src = reader.result;
+          imagePreview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    function extractTags(text) {
+      return text.match(/#\w+/g) || [];
+    }
+
+    function postTweet() {
+      const text = tweetText.value.trim();
+      if (!text) return;
+
+      const posts = JSON.parse(localStorage.getItem("posts") || "[]");
+      posts.unshift({
+        text: text,
+        tags: extractTags(text),
+        name: profileName.value,
+        icon: profileIcon.src,
+        time: new Date().toLocaleString()
+      });
+      localStorage.setItem("posts", JSON.stringify(posts));
+
+      tweetButton.classList.add("posting");
+      setTimeout(() => tweetButton.classList.remove("posting"), 1500);
+
+      tweetText.value = "";
+      imageFiles = [];
+      imagePreview.innerHTML = "";
+      renderTimeline();
+    }
+
+    function deleteAllPosts() {
+      if (confirm("本当にすべて削除しますか？")) {
+        localStorage.removeItem("posts");
+        renderTimeline();
+      }
+    }
+
+    tweetText.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        postTweet();
+      }
+    });
+
+    function renderTimeline() {
+      const posts = JSON.parse(localStorage.getItem("posts") || "[]");
+      const keyword = searchBox.value.trim();
+      timeline.innerHTML = "";
+      posts.filter(post => post.text.includes(keyword) || (post.tags && post.tags.some(tag => tag.includes(keyword)))).forEach((post, index) => {
+        const tagLinks = (post.tags || []).map(tag => `<span class="tag" onclick="filterByTag('${tag}')">${tag}</span>`).join(" ");
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `
+          <div class="meta">
+            <img src="${post.icon}" alt="icon" />
+            <strong>${post.name || "名無し"}</strong>
+            <small>${post.time}</small>
+          </div>
+          <div class="text">${post.text}</div>
+          <div>${tagLinks}</div>
+        `;
+        timeline.appendChild(div);
+      });
+    }
+
+    function filterByTag(tag) {
+      searchBox.value = tag;
+      renderTimeline();
+    }
+
+    tweetText.focus();
+    renderTimeline();
+  </script>
+</body>
+</html>
